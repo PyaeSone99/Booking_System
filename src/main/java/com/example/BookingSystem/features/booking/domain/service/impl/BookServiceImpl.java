@@ -1,5 +1,6 @@
 package com.example.BookingSystem.features.booking.domain.service.impl;
 
+import com.example.BookingSystem.common.dto.PaginationDTO;
 import com.example.BookingSystem.common.enums.BookingStatus;
 import com.example.BookingSystem.exception.CoreApiException;
 import com.example.BookingSystem.features.booking.domain.entity.Booking;
@@ -13,6 +14,8 @@ import com.example.BookingSystem.features.packages.domain.repository.PurchasePac
 import com.example.BookingSystem.features.user.domain.response.LoginUserInfo;
 import com.example.BookingSystem.features.user.domain.service.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -177,5 +180,14 @@ public class BookServiceImpl implements BookService {
             bookingRepository.save(b);
         }
         redisTemplate.delete("waitlist:" + classId);
+    }
+
+    @Override
+    public PaginationDTO<BookingResponse> getUserBookingList(Pageable pageable) {
+        LoginUserInfo loginUserInfo = userServices.getLoginUserInfo();
+        Page<Booking> bookings = bookingRepository.findAllByUserId(loginUserInfo.id(),pageable);
+        List<BookingResponse> bookingResponseList = bookings.stream().map(BookingResponse::from).toList();
+        return new PaginationDTO<>(bookingResponseList,bookings.getNumber(), bookings.getSize(),
+                bookings.getPageable().getOffset(), bookings.getTotalElements(), bookings.getTotalPages());
     }
 }

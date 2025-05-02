@@ -74,7 +74,7 @@ public class UserController {
             @RequestParam String email
     ) {
         userServices.requestPasswordReset(email);
-        return ResponseEntity.ok(new ApiResponseDTO<>("Reset password email sent"));
+        return ResponseEntity.ok(new ApiResponseDTO<>("Reset password email sent.(Please Kindly check to Log for token)"));
     }
 
     @PostMapping("/user/set-new-password")

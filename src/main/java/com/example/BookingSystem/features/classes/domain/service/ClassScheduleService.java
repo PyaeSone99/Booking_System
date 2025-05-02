@@ -21,7 +21,7 @@ public class ClassScheduleService {
         try {
             JobDetail jobDetail = JobBuilder.newJob(WaitlistRefundJob.class)
                     .withIdentity("waitlistRefundJob_" + classId, "waitlistRefunds")
-                    .usingJobData("classId", classId)
+                    .usingJobData("classId", classId.toString())
                     .build();
 
             Trigger trigger = TriggerBuilder.newTrigger()

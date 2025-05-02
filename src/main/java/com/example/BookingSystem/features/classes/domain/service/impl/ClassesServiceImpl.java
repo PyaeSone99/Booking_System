@@ -39,8 +39,9 @@ public class ClassesServiceImpl implements ClassesService {
     public ClassesResponse createClass(ClassRequest classRequest, Country country) {
         Classes classes = mapper.map(classRequest,Classes.class);
         classes.setCountry(country);
-        classScheduleService.scheduleWaitlistRefundJob(classes.getId(), classes.getEndTime());
-        return ClassesResponse.from(classRepository.save(classes));
+        Classes savedClass = classRepository.save(classes);
+        classScheduleService.scheduleWaitlistRefundJob(savedClass.getId(), savedClass.getEndTime());
+        return ClassesResponse.from(savedClass);
     }
 
     @Override

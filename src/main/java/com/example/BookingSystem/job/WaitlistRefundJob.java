@@ -13,7 +13,8 @@ public class WaitlistRefundJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) {
-        Long classId = context.getJobDetail().getJobDataMap().getLong("classId");
+        String classIdStr = context.getJobDetail().getJobDataMap().getString("classId");
+        Long classId = Long.valueOf(classIdStr);
         bookingService.refundWaitlistCredits(classId);
         System.out.println("WaitlistRefundJob executed for classId: " + classId);
     }
