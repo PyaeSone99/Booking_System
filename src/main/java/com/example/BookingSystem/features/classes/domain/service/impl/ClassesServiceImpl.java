@@ -17,7 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -34,13 +33,15 @@ public class ClassesServiceImpl implements ClassesService {
     @Autowired
     private ClassScheduleService classScheduleService;
 
-
     @Override
     public ClassesResponse createClass(ClassRequest classRequest, Country country) {
         Classes classes = mapper.map(classRequest,Classes.class);
         classes.setCountry(country);
         Classes savedClass = classRepository.save(classes);
+        
+        // Schedule waitlist refund job
         classScheduleService.scheduleWaitlistRefundJob(savedClass.getId(), savedClass.getEndTime());
+        
         return ClassesResponse.from(savedClass);
     }
 

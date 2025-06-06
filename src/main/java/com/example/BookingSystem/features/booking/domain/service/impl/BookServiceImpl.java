@@ -80,6 +80,11 @@ public class BookServiceImpl implements BookService {
         if ( bookedCount > cs.getMaxSlots()) {
             redisTemplate.opsForValue().decrement(redisKey, 1); // revert increment
             redisTemplate.opsForList().rightPush("waitlist:" + classId, loginUserInfo.id().toString());
+            
+            // Deduct credits for waitlist users
+            up.setRemainingCredits(up.getRemainingCredits() - cs.getRequiredCredits());
+            purchasePackageRepository.save(up);
+            
             Booking booking = new Booking();
             booking.setUser(up.getUser());
             booking.setClasses(cs);
@@ -146,6 +151,24 @@ public class BookServiceImpl implements BookService {
             // Remove from waitlist if exit
             redisTemplate.opsForList().remove("waitlist:" + cs.getId(), 1, booking.getUser().getId().toString());
         }
+
+        // After cancellation, verify and reset slot count if needed
+        verifyAndResetClassSlots(cs.getId());
+    }
+
+    private void verifyAndResetClassSlots(Long classId) {
+        // Get current booked count from database
+        int actualBookedCount = bookingRepository.findByClasses_IdAndStatus(classId, BookingStatus.BOOKED).size();
+        
+        // Get current slot count from Redis
+        String redisKey = "class_slots:" + classId;
+        String slotsStr = redisTemplate.opsForValue().get(redisKey);
+        int redisSlotCount = slotsStr != null ? Integer.parseInt(slotsStr) : 0;
+
+        // If Redis count doesn't match actual count, reset it
+        if (redisSlotCount != actualBookedCount) {
+            redisTemplate.opsForValue().set(redisKey, String.valueOf(actualBookedCount));
+        }
     }
 
     @Override
@@ -180,6 +203,8 @@ public class BookServiceImpl implements BookService {
             bookingRepository.save(b);
         }
         redisTemplate.delete("waitlist:" + classId);
+        // Also delete the class slots key to ensure clean state
+        redisTemplate.delete("class_slots:" + classId);
     }
 
     @Override
