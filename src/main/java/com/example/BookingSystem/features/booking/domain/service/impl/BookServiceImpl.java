@@ -136,7 +136,7 @@ public class BookServiceImpl implements BookService {
                     waitlistBooking.setStatus(BookingStatus.BOOKED);
                     // Deduct credits from user's package
                     PurchasePackage up = waitlistBooking.getPurchasePackage();
-                    up.setRemainingCredits(up.getRemainingCredits() - cs.getRequiredCredits());
+//                    up.setRemainingCredits(up.getRemainingCredits() - cs.getRequiredCredits());
                     purchasePackageRepository.save(up);
                     bookingRepository.save(waitlistBooking);
                     redisTemplate.opsForValue().increment("class_slots:" + cs.getId(), 1);
@@ -152,20 +152,16 @@ public class BookServiceImpl implements BookService {
             redisTemplate.opsForList().remove("waitlist:" + cs.getId(), 1, booking.getUser().getId().toString());
         }
 
-        // After cancellation, verify and reset slot count if needed
         verifyAndResetClassSlots(cs.getId());
     }
 
     private void verifyAndResetClassSlots(Long classId) {
-        // Get current booked count from database
         int actualBookedCount = bookingRepository.findByClasses_IdAndStatus(classId, BookingStatus.BOOKED).size();
         
-        // Get current slot count from Redis
         String redisKey = "class_slots:" + classId;
         String slotsStr = redisTemplate.opsForValue().get(redisKey);
         int redisSlotCount = slotsStr != null ? Integer.parseInt(slotsStr) : 0;
 
-        // If Redis count doesn't match actual count, reset it
         if (redisSlotCount != actualBookedCount) {
             redisTemplate.opsForValue().set(redisKey, String.valueOf(actualBookedCount));
         }
@@ -203,7 +199,6 @@ public class BookServiceImpl implements BookService {
             bookingRepository.save(b);
         }
         redisTemplate.delete("waitlist:" + classId);
-        // Also delete the class slots key to ensure clean state
         redisTemplate.delete("class_slots:" + classId);
     }
 
